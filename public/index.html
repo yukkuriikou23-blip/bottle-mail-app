@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>言葉の欠片 - Bottle Mail</title>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #000814;
+            --accent: #a8c5e0;
+            --line-color: #06C755;
+            --glass: rgba(255, 255, 255, 0.03);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Shippori Mincho', serif;
+            background: linear-gradient(135deg, #000814 0%, #001d3d 50%, #000814 100%);
+            background-size: 400% 400%;
+            animation: oceanBreathe 15s ease-in-out infinite;
+            color: #f0f4f8;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+
+        @keyframes oceanBreathe {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            font-weight: 200;
+            letter-spacing: 0.5em;
+            margin-bottom: 3rem;
+            color: var(--accent);
+            text-shadow: 0 0 20px rgba(168, 197, 224, 0.3);
+        }
+
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-family: inherit;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            resize: none;
+            outline: none;
+            margin-bottom: 20px;
+        }
+
+        .sea-selector {
+            text-align: left;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+        }
+
+        .sea-selector label {
+            display: block;
+            margin: 12px 0;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: 0.3s;
+        }
+
+        .sea-selector label:hover { opacity: 1; }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: rgba(168, 197, 224, 0.05);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 12px 30px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: inherit;
+            letter-spacing: 0.1em;
+            transition: 0.4s;
+        }
+
+        button:hover {
+            background: var(--accent);
+            color: var(--bg-color);
+            box-shadow: 0 0 20px var(--accent);
+        }
+
+        /* LINEボタン専用のデザイン */
+        .btn-line {
+            border-color: var(--line-color);
+            color: var(--line-color);
+        }
+
+        .btn-line:hover {
+            background: var(--line-color);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(6, 199, 85, 0.4);
+        }
+
+        #message-display {
+            min-height: 120px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            line-height: 2;
+        }
+
+        .emerge {
+            display: flex !important;
+            animation: emerge 1.5s ease-out forwards;
+        }
+
+        @keyframes emerge {
+            from { opacity: 0; transform: translateY(30px); filter: blur(10px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>言葉の欠片</h1>
+        
+        <div class="glass-panel">
+            <textarea id="message-input" placeholder="今、心に浮かんだ叙情を..." rows="4"></textarea>
+            
+            <div class="sea-selector">
+                <label><input type="radio" name="mode" value="normal" checked> 名もなき海（すぐに届ける）</label>
+                <label><input type="radio" name="mode" value="world"> 異国の海（翻訳して届ける）</label>
+                <label><input type="radio" name="mode" value="deep"> 深海（一分後に浮かぶ）</label>
+            </div>
+
+            <div class="button-group">
+                <button onclick="sendBottle()">海に流す</button>
+                <button class="btn-line" onclick="sendViaLine()">LINEで誰かに流す</button>
+            </div>
+        </div>
+
+        <div id="message-display" class="glass-panel"></div>
+    </div>
+
+    <script>
+        // 通常の海に流す処理
+        async function sendBottle() {
+            const input = document.getElementById('message-input');
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            if (!input.value) return;
+
+            await fetch('/api/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: input.value, mode: mode })
+            });
+
+            input.value = '';
+
+            const display = document.getElementById('message-display');
+            display.classList.remove('emerge');
+            void display.offsetWidth;
+
+            const res = await fetch('/api/random');
+            const data = await res.json();
+            
+            display.innerText = data.text;
+            display.classList.add('emerge');
+        }
+
+        // LINEで流す処理
+        function sendViaLine() {
+            const input = document.getElementById('message-input').value;
+            if (!input) {
+                alert("まずは言葉を綴ってください。");
+                return;
+            }
+            
+            // 相手に送る文章を組み立てる（URLは仮のlocalhostのままにしています）
+            const text = `『${input}』\n\n🌊 誰かから言葉の欠片が届きました。\nhttp://localhost:3000`;
+            
+            // テキストをURLで送れる形式に変換してLINEを起動
+            const url = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+            
+            // 入力欄を空にする
+            document.getElementById('message-input').value = '';
+        }
+    </script>
+</body>
+</html>
