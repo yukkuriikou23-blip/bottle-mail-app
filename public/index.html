@@ -243,64 +243,68 @@ body.theme-night .letter-content {
     </div>
 </div>
 <script>
-// ▼▼▼ ページを開いた瞬間の判定 ▼▼▼
-// ▼▼▼ 修正版：ページを開いた瞬間の判定 ▼▼▼
-window.onload = function() {
-    const world = localStorage.getItem('my_world_type');
-    
-    if (!world) {
-        // まだ選んでいない人 → 選択画面を出し、透明度も1にする！
-        const modal = document.getElementById('world-choice-modal');
-        modal.style.display = 'flex';
+    // ▼▼▼ 1. 起動時のチェック（世界選択 & 音の準備） ▼▼▼
+    let audio = new Audio('the-sound-of-calm-waves.mp3'); // 音声ファイル名を確認！
+    audio.loop = true;
+    audio.volume = 0.3;
+
+    window.onload = function() {
+        // 世界の記憶を確認
+        const world = localStorage.getItem('my_world_type');
         
-        // ★ここが修正ポイント：少し待ってから不透明にする（アニメーション用）
-        setTimeout(() => {
-            modal.style.opacity = '1';
-        }, 10);
-        
-    } else {
-        // すでに選んだ人 → その世界を適用
-        document.body.classList.add('theme-' + world);
+        if (!world) {
+            // まだ選んでいない人（初回）→ 選択画面を出す
+            const modal = document.getElementById('world-choice-modal');
+            modal.style.display = 'flex';
+            // 少し待ってから不透明にする（アニメーション用）
+            setTimeout(() => { modal.style.opacity = '1'; }, 10);
+        } else {
+            // すでに選んだ人 → その世界を適用
+            document.body.classList.add('theme-' + world);
+        }
+    };
+
+    // ▼▼▼ 2. 世界を選ぶ機能（不可逆） ▼▼▼
+    function chooseWorld(type) {
+        localStorage.setItem('my_world_type', type);
+        document.body.classList.add('theme-' + type);
+        document.getElementById('world-choice-modal').style.display = 'none';
     }
-};
 
-// ▼▼▼ 世界を選ぶ関数 ▼▼▼
-function chooseWorld(type) {
-    // 1. 記憶に焼き付ける（もう変更できない）
-    localStorage.setItem('my_world_type', type);
-    
-    // 2. 世界を適用する
-    document.body.classList.add('theme-' + type);
-    
-    // 3. 選択画面を消す
-    document.getElementById('world-choice-modal').style.display = 'none';
-    
-    // 演出：これから始まる合図に音を再生してもOK
-    // let audio = new Audio('the-sound-of-calm-waves.mp3'); ...
-}
+    // ▼▼▼ 3. 音を鳴らす機能 ▼▼▼
+    let isPlaying = false;
+    function toggleSound() {
+        const btn = document.getElementById('sound-btn');
+        if (isPlaying) {
+            audio.pause();
+            btn.innerText = "🔇";
+        } else {
+            audio.play().catch(e => alert("音が出ません。画面を一度クリックしてから試してね。"));
+            btn.innerText = "🔈";
+        }
+        isPlaying = !isPlaying;
+    }
 
-    // モーダルを表示する関数
+    // ▼▼▼ 4. モーダル（手紙画面）の制御 ▼▼▼
     function showModal(text) {
         const modal = document.getElementById('letter-modal');
         document.getElementById('modal-text').innerText = text;
-        modal.classList.add('active'); // ふわっと表示
+        modal.classList.add('active');
     }
-
-    // モーダルを閉じる関数
     function closeModal() {
-        const modal = document.getElementById('letter-modal');
-        modal.classList.remove('active');
+        document.getElementById('letter-modal').classList.remove('active');
     }
 
+    // ▼▼▼ 5. ボトルを流す機能（送信） ▼▼▼
     async function throwBottle() {
         const text = document.getElementById('msg-input').value;
         const email = document.getElementById('email-input').value;
         const delay = document.getElementById('delay-input').value;
 
-        if(!text) return showModal("言葉がまだ、空っぽです。"); // alertをやめる
+        if(!text) return showModal("言葉がまだ、空っぽです。");
 
         try {
-            const res = await fetch('/api/messages', {
+            await fetch('/api/messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -309,10 +313,9 @@ function chooseWorld(type) {
                     delayMinutes: delay 
                 })
             });
-            const data = await res.json();
             
-            // ★ここ！演出を変える
-            document.getElementById('msg-input').value = ''; // 入力欄を空に
+            // 入力欄を空にして、美しいメッセージを表示
+            document.getElementById('msg-input').value = ''; 
             showModal("ボトルを海に流しました。\n\nいつか、誰かの岸辺に\n届きますように。");
             
         } catch (e) {
@@ -320,35 +323,16 @@ function chooseWorld(type) {
         }
     }
 
+    // ▼▼▼ 6. ボトルを拾う機能（受信） ▼▼▼
     async function fetchBottle() {
         try {
             const res = await fetch('/api/random');
             const data = await res.json();
-            // ★ここ！拾った言葉を綺麗に表示
             showModal(data.text);
         } catch (e) {
             showModal("今は何も見つかりませんでした。");
         }
     }
-/* ▼▼▼ 音のコントロール ▼▼▼ */
-let audio = new Audio('the-sound-of-calm-waves.mp3'); // ここにファイル名を入れる
-audio.loop = true; // ずっと流す
-audio.volume = 0.3; // 音量は控えめに（30%）
-
-let isPlaying = false;
-
-function toggleSound() {
-    const btn = document.getElementById('sound-btn');
-    if (isPlaying) {
-        audio.pause();
-        btn.innerText = "🔇"; // ミュートアイコン
-    } else {
-        // ユーザーがボタンを押した時だけ再生できる（ブラウザのルール）
-        audio.play().catch(e => alert("音楽ファイル(wave.mp3)が見つかりません！publicフォルダに入れてね"));
-        btn.innerText = "🔈"; // 音が出るアイコン
-    }
-    isPlaying = !isPlaying;
-}
 </script>
 <div id="letter-modal" class="modal-overlay">
     <div class="letter-content">
