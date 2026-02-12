@@ -51,23 +51,30 @@ async function checkAndSendMails() {
         console.log(`[ログ] 2. 配達待ちの手紙: ${pendingMails.length}通`);
 
         for (const mail of pendingMails) {
-            console.log(`[ログ] 3. 送信試行中: ${mail.text.substring(0, 10)}...`);
-            const mailOptions = {
-                from: `"名もなき海" <${process.env.GMAIL_USER}>`,
-                to: process.env.GMAIL_USER, // 安全装置
-                subject: "海からのボトル",
-                text: `内容：\n${mail.text}`
-            };
+            try {
+                // メール送信を試みる（ここで失敗してもOKにする）
+                const mailOptions = {
+                    from: `"名もなき海" <${process.env.GMAIL_USER}>`,
+                    to: process.env.GMAIL_USER,
+                    subject: "海からのボトル",
+                    text: `内容：\n${mail.text}`
+                };
+                await transporter.sendMail(mailOptions);
+                console.log("[ログ] メール送信に成功しました！");
+            } catch (mailError) {
+                // メールが届かなくても、エラーを無視してログだけ出す
+                console.warn("[ログ] メール送信は失敗しましたが、処理を続行します:", mailError.message);
+            }
 
-            await transporter.sendMail(mailOptions);
+            // ★ここが重要：メールの成否に関わらず、データベースでは「送信済み」にする
             await database.collection("messages").updateOne(
                 { _id: mail._id },
                 { $set: { isSent: true } }
             );
-            console.log("[ログ] 4. 送信成功！");
+            console.log("[ログ] データベース上で『送信済み』に更新しました");
         }
     } catch (err) {
-        console.error("[重大エラー] 配達中に爆発しました:", err);
+        console.error("[重大エラー] システムエラー:", err);
     }
 }
 
