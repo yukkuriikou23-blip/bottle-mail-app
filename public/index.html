@@ -10,6 +10,7 @@
             --bg-color: #000814;
             --accent: #a8c5e0;
             --glass: rgba(255, 255, 255, 0.03);
+            --line-color: #06c755;
         }
 
         body {
@@ -70,14 +71,30 @@
 
         button:hover { background: var(--accent); color: var(--bg-color); box-shadow: 0 0 20px var(--accent); }
 
+        /* LINEボタンの装飾 */
+        .line-btn {
+            border-color: var(--line-color);
+            color: var(--line-color);
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        .line-btn:hover {
+            background: var(--line-color);
+            color: white;
+            box-shadow: 0 0 15px var(--line-color);
+        }
+
         #message-display {
             min-height: 150px;
-            display: none;
+            display: none; /* 最初は隠す */
             align-items: center;
             justify-content: center;
             font-size: 1.2rem;
             line-height: 2.2;
             word-break: break-all;
+            flex-direction: column;
         }
 
         /* 漂着アニメーション：砂浜に文字が浮かび上がる */
@@ -92,6 +109,8 @@
         }
 
         .sea-mode { font-size: 0.8rem; opacity: 0.6; margin-bottom: 15px; text-align: left; }
+        
+        #result-area { display: none; } /* LINEボタンを隠しておくエリア */
     </style>
 </head>
 <body>
@@ -103,8 +122,7 @@
             
             <div class="sea-mode">
                 <label><input type="radio" name="mode" value="normal" checked> 名もなき海</label>
-                <label><input type="radio" name="mode" value="world"> 異国の海</label>
-            </div>
+                </div>
 
             <div class="button-group">
                 <button onclick="sendBottle()">海に流す</button>
@@ -113,37 +131,73 @@
         </div>
 
         <div id="message-display" class="glass-panel">
+            <div id="inner-text"></div>
+            <div id="result-area" style="margin-top: 20px;">
+                <a id="line-share" href="#" target="_blank" class="button line-btn">LINEで友人に教える</a>
             </div>
+        </div>
     </div>
 
     <script>
-        // 送信
+        // 送信機能
         async function sendBottle() {
             const input = document.getElementById('message-input');
-            const mode = document.querySelector('input[name="mode"]:checked').value;
+            const modeInput = document.querySelector('input[name="mode"]:checked');
+            const mode = modeInput ? modeInput.value : 'normal';
+
             if (!input.value) return;
 
-            await fetch('/api/messages', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: input.value, mode: mode })
-            });
+            try {
+                await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: input.value, mode: mode })
+                });
 
-            input.value = '';
-            alert("言葉は海へ消えていきました...");
+                input.value = '';
+                alert("言葉は海へ消えていきました...");
+            } catch (e) {
+                alert("送信に失敗しました（サーバーがお休み中かもしれません）");
+            }
         }
 
-        // 受信（洗練されたアニメーション付き）
+        // 受信機能（アニメーション＋LINE復活）
         async function fetchBottle() {
             const display = document.getElementById('message-display');
-            display.classList.remove('wash-up');
-            void display.offsetWidth; // リセット用
+            const innerText = document.getElementById('inner-text');
+            const resultArea = document.getElementById('result-area');
+            const lineLink = document.getElementById('line-share');
 
-            const res = await fetch('/api/random');
-            const data = await res.json();
-            
-            display.innerText = data.text;
-            display.classList.add('wash-up');
+            // アニメーションのリセット
+            display.classList.remove('wash-up');
+            resultArea.style.display = 'none'; // LINEボタンを一回隠す
+            void display.offsetWidth; // リフロー強制（魔法の呪文）
+
+            try {
+                const res = await fetch('/api/random');
+                const data = await res.json();
+                
+                // テキストを表示
+                innerText.innerText = data.text || "海は静かです...";
+                
+                // LINEシェアリンクの作成
+                const shareText = encodeURIComponent(`「${data.text}」\n\n#言葉の欠片 #BottleMail`);
+                const shareUrl = encodeURIComponent(window.location.href);
+                lineLink.href = `https://line.me/R/msg/text/?${shareText}%20${shareUrl}`;
+                
+                // アニメーション開始
+                display.classList.add('wash-up');
+                
+                // 少し遅れてLINEボタンを表示
+                setTimeout(() => {
+                    resultArea.style.display = 'block';
+                }, 2000);
+
+            } catch (e) {
+                console.error(e);
+                innerText.innerText = "波の音が聞こえません...";
+                display.classList.add('wash-up');
+            }
         }
     </script>
 </body>
