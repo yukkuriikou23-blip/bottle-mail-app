@@ -244,15 +244,22 @@ body.theme-night .letter-content {
 </div>
 <script>
 // ▼▼▼ ページを開いた瞬間の判定 ▼▼▼
+// ▼▼▼ 修正版：ページを開いた瞬間の判定 ▼▼▼
 window.onload = function() {
-    // ブラウザに残った「記憶」を確認
     const world = localStorage.getItem('my_world_type');
     
     if (!world) {
-        // まだ選んでいない人（初回）→ 選択画面を出す
-        document.getElementById('world-choice-modal').style.display = 'flex';
+        // まだ選んでいない人 → 選択画面を出し、透明度も1にする！
+        const modal = document.getElementById('world-choice-modal');
+        modal.style.display = 'flex';
+        
+        // ★ここが修正ポイント：少し待ってから不透明にする（アニメーション用）
+        setTimeout(() => {
+            modal.style.opacity = '1';
+        }, 10);
+        
     } else {
-        // すでに選んだ人 → その世界を適用する
+        // すでに選んだ人 → その世界を適用
         document.body.classList.add('theme-' + world);
     }
 };
