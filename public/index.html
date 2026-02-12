@@ -44,7 +44,6 @@
             resize: none; outline: none; margin-bottom: 20px;
         }
 
-        /* 新しく追加する入力欄のスタイル */
         .input-field {
             width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
             border-radius: 10px; color: white; padding: 10px; margin-bottom: 15px;
@@ -104,4 +103,32 @@
             if(!text) return alert("言葉を入力してください");
 
             try {
-                const res = await fetch('/api/messages
+                const res = await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        text: text, 
+                        recipientEmail: email, 
+                        delayMinutes: delay 
+                    })
+                });
+                const data = await res.json();
+                alert(`ボトルを流しました。${new Date(data.scheduledAt).toLocaleString()} 頃に届きます。`);
+                document.getElementById('msg-input').value = '';
+            } catch (e) {
+                alert("送信に失敗しました");
+            }
+        }
+
+        async function fetchBottle() {
+            try {
+                const res = await fetch('/api/random');
+                const data = await res.json();
+                alert(`拾った言葉：\n${data.text}`);
+            } catch (e) {
+                alert("今は何も見つかりませんでした");
+            }
+        }
+    </script>
+</body>
+</html>
