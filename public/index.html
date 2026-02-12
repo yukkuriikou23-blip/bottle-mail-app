@@ -66,6 +66,46 @@
         button:hover { background: var(--accent); color: var(--bg-deep); }
 
         .label-text { font-size: 0.8rem; opacity: 0.7; display: block; text-align: left; margin-bottom: 5px; }
+/* モーダル（全体を覆う幕） */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 8, 20, 0.85); /* 深い青の半透明 */
+    backdrop-filter: blur(5px);
+    display: none; /* 普段は隠しておく */
+    justify-content: center; align-items: center;
+    opacity: 0; transition: opacity 0.5s ease; z-index: 1000;
+}
+
+/* 表示されたとき */
+.modal-overlay.active { display: flex; opacity: 1; }
+
+/* 手紙の本体 */
+.letter-content {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(168, 197, 224, 0.3);
+    padding: 40px; border-radius: 4px;
+    max-width: 80%; width: 400px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(168, 197, 224, 0.1);
+    transform: translateY(20px); transition: transform 0.5s ease;
+}
+
+.modal-overlay.active .letter-content { transform: translateY(0); }
+
+/* 文字のデザイン */
+.letter-body {
+    font-size: 1.2rem; line-height: 2.0; margin-bottom: 30px;
+    white-space: pre-wrap; /* 改行をそのまま表示 */
+    font-family: 'Shippori Mincho', serif;
+}
+
+/* 閉じるボタン */
+.close-btn {
+    background: transparent; border: 1px solid rgba(255,255,255,0.3);
+    color: rgba(255,255,255,0.7); padding: 8px 24px;
+    border-radius: 20px; cursor: pointer; transition: 0.3s;
+}
+.close-btn:hover { background: rgba(255,255,255,0.1); color: white; border-color: white; }
     </style>
 </head>
 <body>
@@ -94,41 +134,65 @@
         </div>
     </div>
 
-    <script>
-        async function throwBottle() {
-            const text = document.getElementById('msg-input').value;
-            const email = document.getElementById('email-input').value;
-            const delay = document.getElementById('delay-input').value;
+<script>
+    // モーダルを表示する関数
+    function showModal(text) {
+        const modal = document.getElementById('letter-modal');
+        document.getElementById('modal-text').innerText = text;
+        modal.classList.add('active'); // ふわっと表示
+    }
 
-            if(!text) return alert("言葉を入力してください");
+    // モーダルを閉じる関数
+    function closeModal() {
+        const modal = document.getElementById('letter-modal');
+        modal.classList.remove('active');
+    }
 
-            try {
-                const res = await fetch('/api/messages', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        text: text, 
-                        recipientEmail: email, 
-                        delayMinutes: delay 
-                    })
-                });
-                const data = await res.json();
-                alert(`ボトルを流しました。${new Date(data.scheduledAt).toLocaleString()} 頃に届きます。`);
-                document.getElementById('msg-input').value = '';
-            } catch (e) {
-                alert("送信に失敗しました");
-            }
+    async function throwBottle() {
+        const text = document.getElementById('msg-input').value;
+        const email = document.getElementById('email-input').value;
+        const delay = document.getElementById('delay-input').value;
+
+        if(!text) return showModal("言葉がまだ、空っぽです。"); // alertをやめる
+
+        try {
+            const res = await fetch('/api/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    text: text, 
+                    recipientEmail: email, 
+                    delayMinutes: delay 
+                })
+            });
+            const data = await res.json();
+            
+            // ★ここ！演出を変える
+            document.getElementById('msg-input').value = ''; // 入力欄を空に
+            showModal("ボトルを海に流しました。\n\nいつか、誰かの岸辺に\n届きますように。");
+            
+        } catch (e) {
+            showModal("波が高くて、流せませんでした...");
         }
+    }
 
-        async function fetchBottle() {
-            try {
-                const res = await fetch('/api/random');
-                const data = await res.json();
-                alert(`拾った言葉：\n${data.text}`);
-            } catch (e) {
-                alert("今は何も見つかりませんでした");
-            }
+    async function fetchBottle() {
+        try {
+            const res = await fetch('/api/random');
+            const data = await res.json();
+            // ★ここ！拾った言葉を綺麗に表示
+            showModal(data.text);
+        } catch (e) {
+            showModal("今は何も見つかりませんでした。");
         }
-    </script>
+    }
+</script>
+<div id="letter-modal" class="modal-overlay">
+    <div class="letter-content">
+        <div class="letter-body" id="modal-text">
+            </div>
+        <button onclick="closeModal()" class="close-btn">海に還す</button>
+    </div>
+</div>
 </body>
 </html>
