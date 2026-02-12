@@ -3,308 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bottle Mail - 名もなき海</title>
+    <title>言葉の欠片 - 名もなき海</title>
     <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-deep: #001e3c;
-            --bg-surface: #0a4e76;
-            --accent: #dbeafe;
-            --bottle-color: #81c3d7;
+            --bg-deep: #000814;
+            --accent: #a8c5e0;
+            --glass: rgba(255, 255, 255, 0.05);
         }
 
         body {
             margin: 0;
-            overflow: hidden;
-            background: linear-gradient(to bottom, var(--bg-surface), var(--bg-deep));
+            background: var(--bg-deep);
+            color: #f0f4f8;
             font-family: 'Shippori Mincho', serif;
-            color: white;
-            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        /* 背景の浮遊する泡 */
-        .bubble {
-            position: absolute;
-            bottom: -20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            pointer-events: none;
-            animation: rise infinite ease-in;
-        }
+        .container { width: 90%; max-width: 500px; text-align: center; }
+        
+        h1 { font-weight: 200; letter-spacing: 0.5em; margin-bottom: 2rem; color: var(--accent); }
 
-        @keyframes rise {
-            0% { transform: translateY(0) scale(1); opacity: 0; }
-            50% { opacity: 0.5; }
-            100% { transform: translateY(-120vh) scale(1.5); opacity: 0; }
-        }
-
-        /* メインコンテナ */
-        .container {
-            position: relative;
-            z-index: 10;
-            width: 90%;
-            max-width: 500px;
-            text-align: center;
-        }
-
-        h1 {
-            font-weight: 200;
-            letter-spacing: 0.4em;
-            margin-bottom: 40px;
-            text-shadow: 0 0 10px rgba(255,255,255,0.3);
-        }
-
-        /* 入力エリア */
-        .glass-box {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
+            border-radius: 20px;
             padding: 30px;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
 
         textarea {
-            width: 100%;
-            background: transparent;
-            border: none;
-            border-bottom: 1px solid rgba(255,255,255,0.3);
-            color: #fff;
-            font-family: inherit;
-            font-size: 1.1rem;
-            resize: none;
-            outline: none;
-            margin-bottom: 20px;
+            width: 100%; background: transparent; border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff; font-family: inherit; font-size: 1.1rem;
+            resize: none; outline: none; margin-bottom: 20px;
         }
 
-        .actions {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
+        /* 新しく追加する入力欄のスタイル */
+        .input-field {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; color: white; padding: 10px; margin-bottom: 15px;
+            font-family: inherit; box-sizing: border-box;
         }
+
+        .select-field {
+            width: 100%; background: #1a1a1a; color: white; border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px; border-radius: 10px; margin-bottom: 20px;
+        }
+
+        .button-group { display: flex; gap: 10px; justify-content: center; }
 
         button {
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.4);
-            color: white;
-            padding: 10px 30px;
-            border-radius: 50px;
-            cursor: pointer;
-            font-family: inherit;
-            transition: 0.3s;
+            background: transparent; border: 1px solid var(--accent);
+            color: var(--accent); padding: 12px 25px; border-radius: 30px;
+            cursor: pointer; font-family: inherit; transition: 0.4s;
         }
 
-        button:hover {
-            background: rgba(255,255,255,0.1);
-            transform: translateY(-2px);
-            box-shadow: 0 0 15px rgba(255,255,255,0.2);
-        }
+        button:hover { background: var(--accent); color: var(--bg-deep); }
 
-        /* 投げ込まれるボトル */
-        #thrown-bottle {
-            position: fixed;
-            font-size: 3rem;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            pointer-events: none;
-            z-index: 20;
-            opacity: 0;
-        }
-
-        .throw-anim {
-            animation: throwBottle 1.5s ease-out forwards;
-        }
-
-        @keyframes throwBottle {
-            0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 0; }
-            20% { transform: translate(-50%, -50%) scale(1.5) rotate(-20deg); opacity: 1; }
-            100% { transform: translate(150px, -200px) scale(0.5) rotate(360deg); opacity: 0; }
-        }
-
-        /* 漂着するボトル（未開封） */
-        #drift-bottle {
-            font-size: 4rem;
-            margin-top: 20px;
-            cursor: pointer;
-            filter: drop-shadow(0 0 10px rgba(255,255,255,0.5));
-            animation: float 3s ease-in-out infinite;
-            display: none; /* 最初は隠す */
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(10deg); }
-            50% { transform: translateY(-10px) rotate(-10deg); }
-        }
-
-        /* 開封後のメッセージ */
-        #message-content {
-            display: none;
-            margin-top: 20px;
-            animation: fadeIn 1s;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .message-text {
-            font-size: 1.2rem;
-            line-height: 2;
-            margin-bottom: 20px;
-        }
-
-        .line-btn {
-            font-size: 0.9rem;
-            color: #06c755;
-            border-color: #06c755;
-            text-decoration: none;
-            display: inline-block;
-            margin-top: 10px;
-            padding: 8px 20px;
-            border: 1px solid;
-            border-radius: 30px;
-        }
+        .label-text { font-size: 0.8rem; opacity: 0.7; display: block; text-align: left; margin-bottom: 5px; }
     </style>
 </head>
 <body>
-
-    <div id="bubbles"></div>
-
-    <div id="thrown-bottle">🍾</div>
-
     <div class="container">
-        <h1>名もなき海</h1>
-        
-        <div class="glass-box">
-            <textarea id="msg-input" rows="3" placeholder="ここに想いを詰めて..."></textarea>
-            <div class="actions">
-                <button onclick="throwMessage()">海に流す</button>
-                <button onclick="searchBeach()">誰かのボトルを探す</button>
-            </div>
-        </div>
+        <h1>言葉の欠片</h1>
+        <div class="glass-panel">
+            <textarea id="msg-input" rows="4" placeholder="今、心に浮かんだ叙情を..."></textarea>
+            
+            <span class="label-text">送り先（Gmailなど）</span>
+            <input type="email" id="email-input" class="input-field" placeholder="example@gmail.com">
 
-        <div id="beach-area" style="min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-            <div id="status-text" style="margin-top: 20px; opacity: 0.7;"></div>
-            
-            <div id="drift-bottle" onclick="openBottle()">🍾</div>
-            
-            <div id="message-content">
-                <p class="message-text" id="final-text"></p>
-                <a id="line-share" href="#" target="_blank" class="line-btn">LINEでシェア</a>
-                <br><br>
-                <button onclick="resetScreen()" style="font-size: 0.8rem; border: none;">もう一度探す</button>
+            <span class="label-text">いつ届けるか</span>
+            <select id="delay-input" class="select-field">
+                <option value="0">すぐに（即時）</option>
+                <option value="1">1分後</option>
+                <option value="60">1時間後</option>
+                <option value="1440">1日後</option>
+                <option value="43200">1ヶ月後</option>
+                <option value="525600">1年後</option>
+            </select>
+
+            <div class="button-group">
+                <button onclick="throwBottle()">海に流す</button>
+                <button onclick="fetchBottle()">欠片を拾う</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 泡のアニメーション生成
-        function createBubbles() {
-            const container = document.getElementById('bubbles');
-            const bubbleCount = 20;
-            for (let i = 0; i < bubbleCount; i++) {
-                const bubble = document.createElement('div');
-                bubble.classList.add('bubble');
-                const size = Math.random() * 10 + 5;
-                bubble.style.width = `${size}px`;
-                bubble.style.height = `${size}px`;
-                bubble.style.left = `${Math.random() * 100}%`;
-                bubble.style.animationDuration = `${Math.random() * 10 + 5}s`;
-                bubble.style.animationDelay = `${Math.random() * 5}s`;
-                container.appendChild(bubble);
-            }
-        }
-        createBubbles();
+        async function throwBottle() {
+            const text = document.getElementById('msg-input').value;
+            const email = document.getElementById('email-input').value;
+            const delay = document.getElementById('delay-input').value;
 
-        // 1. メッセージを流す（アニメーション付き）
-        async function throwMessage() {
-            const input = document.getElementById('msg-input');
-            const bottle = document.getElementById('thrown-bottle');
-            
-            if(!input.value) return;
+            if(!text) return alert("言葉を入力してください");
 
-            // アニメーション発動
-            bottle.classList.remove('throw-anim');
-            void bottle.offsetWidth; // リセット魔法
-            bottle.classList.add('throw-anim');
-
-            // サーバーへ送信
             try {
-                await fetch('/api/messages', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: input.value })
-                });
-                
-                setTimeout(() => {
-                    input.value = '';
-                    alert("ボトルは波の彼方へ消えていきました");
-                }, 1000);
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        // 変数: 拾ったデータを一時保存
-        let currentMessageData = null;
-
-        // 2. ボトルを探す（フェーズ1）
-        async function searchBeach() {
-            const status = document.getElementById('status-text');
-            const bottle = document.getElementById('drift-bottle');
-            const content = document.getElementById('message-content');
-
-            // 画面リセット
-            content.style.display = 'none';
-            bottle.style.display = 'none';
-            status.innerText = "波打ち際を探しています...";
-            
-            try {
-                const res = await fetch('/api/random');
-                const data = await res.json();
-                currentMessageData = data; // データを保存
-
-                setTimeout(() => {
-                    status.innerText = "ボトルが漂着しました！";
-                    bottle.style.display = 'block'; // ボトル出現
-                }, 1500); // 1.5秒の「探してる感」を出す
-
-            } catch (e) {
-                status.innerText = "今は何も見つかりませんでした...";
-            }
-        }
-
-        // 3. ボトルを開ける（フェーズ2：開封の儀）
-        function openBottle() {
-            if (!currentMessageData) return;
-
-            const bottle = document.getElementById('drift-bottle');
-            const content = document.getElementById('message-content');
-            const text = document.getElementById('final-text');
-            const lineLink = document.getElementById('line-share');
-            const status = document.getElementById('status-text');
-
-            // ボトルを消して手紙を出す
-            bottle.style.display = 'none';
-            status.innerText = "";
-            content.style.display = 'block';
-            
-            // テキストセット
-            text.innerText = currentMessageData.text || "（白紙の手紙）";
-
-            // LINEリンク作成
-            const shareText = encodeURIComponent(`「${currentMessageData.text}」\n\n#名もなき海 #BottleMail`);
-            const shareUrl = encodeURIComponent(window.location.href);
-            lineLink.href = `https://line.me/R/msg/text/?${shareText}%20${shareUrl}`;
-        }
-
-        function resetScreen() {
-            document.getElementById('message-content').style.display = 'none';
-            document.getElementById('status-text').innerText = "";
-        }
-    </script>
-</body>
-</html>
+                const res = await fetch('/api/messages
