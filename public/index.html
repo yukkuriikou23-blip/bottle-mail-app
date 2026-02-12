@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>言葉の欠片 - 名もなき海</title>
     <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&display=swap" rel="stylesheet">
     <style>
@@ -137,10 +138,27 @@
   0%, 100% { transform: translate3d(0,-25px,0); }
   50% { transform: translate3d(0,5px,0); }
 }
-
+/* ▼▼▼ スマホ対応（画面幅600px以下） ▼▼▼ */
+@media (max-width: 600px) {
+    body { padding: 10px; }
+    h1 { font-size: 1.8rem; margin-bottom: 20px; }
+    
+    /* 入力欄を画面いっぱいに */
+    .input-group, textarea, input, button {
+        width: 100%; box-sizing: border-box;
+    }
+    
+    /* ボタンを押しやすく大きく */
+    button { padding: 15px; font-size: 1.1rem; margin-top: 10px; }
+    
+    /* モーダル（手紙）もスマホサイズに */
+    .letter-content { width: 90%; padding: 20px; }
+    .letter-body { font-size: 1.0rem; line-height: 1.8; }
+}
     </style>
 </head>
 <body>
+    <button id="sound-btn" onclick="toggleSound()" style="position:fixed; top:20px; right:20px; background:none; border:none; font-size:1.5rem; cursor:pointer; z-index:1001;">🔇</button>
     <div class="container">
         <h1>言葉の欠片</h1>
         <div class="glass-panel">
@@ -218,6 +236,25 @@
             showModal("今は何も見つかりませんでした。");
         }
     }
+/* ▼▼▼ 音のコントロール ▼▼▼ */
+let audio = new Audio("the-sound-of-calm-waves"); // ここにファイル名を入れる
+audio.loop = true; // ずっと流す
+audio.volume = 0.3; // 音量は控えめに（30%）
+
+let isPlaying = false;
+
+function toggleSound() {
+    const btn = document.getElementById('sound-btn');
+    if (isPlaying) {
+        audio.pause();
+        btn.innerText = "🔇"; // ミュートアイコン
+    } else {
+        // ユーザーがボタンを押した時だけ再生できる（ブラウザのルール）
+        audio.play().catch(e => alert("音楽ファイル(wave.mp3)が見つかりません！publicフォルダに入れてね"));
+        btn.innerText = "🔈"; // 音が出るアイコン
+    }
+    isPlaying = !isPlaying;
+}
 </script>
 <div id="letter-modal" class="modal-overlay">
     <div class="letter-content">
