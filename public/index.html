@@ -155,6 +155,44 @@
     .letter-content { width: 90%; padding: 20px; }
     .letter-body { font-size: 1.0rem; line-height: 1.8; }
 }
+
+/* ▼▼▼ 世界観のテーマ ▼▼▼ */
+
+/* 🌅 朝凪（Morning）：明るく、透き通った青 */
+body.theme-morning {
+    background: linear-gradient(180deg, #a1c4fd 0%, #c2e9fb 100%);
+    color: #005bea;
+}
+/* 朝の海の色 */
+body.theme-morning .ocean { background: #4facfe; opacity: 0.3; }
+/* 朝のモーダル（白っぽく） */
+body.theme-morning .letter-content {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    color: #004e92;
+    box-shadow: 0 10px 30px rgba(161, 196, 253, 0.3);
+}
+/* 朝のボタン */
+body.theme-morning button {
+    border-color: #005bea; color: #005bea;
+}
+body.theme-morning button:hover {
+    background: rgba(0, 91, 234, 0.1);
+}
+
+/* 🌃 深海（Night）：今のデザインをより深く */
+body.theme-night {
+    background: linear-gradient(180deg, #09203f 0%, #537895 100%);
+    color: #e0e0e0;
+}
+/* 夜の海の色 */
+body.theme-night .ocean { background: #00151f; opacity: 0.8; }
+/* 夜のモーダル（黒っぽく） */
+body.theme-night .letter-content {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #f1f1f1;
+}
     </style>
 </head>
 <body>
@@ -183,8 +221,57 @@
             </div>
         </div>
     </div>
-
+<div id="world-choice-modal" class="modal-overlay" style="display:none; background:black; z-index:9999;">
+    <div class="letter-content" style="border:none; box-shadow:none; background:transparent;">
+        <p class="letter-body" style="color:white; font-family:'Shippori Mincho', serif;">
+            ようこそ、名もなき海へ。<br><br>
+            あなたが望むのは、<br>
+            光あふれる「朝の海」ですか？<br>
+            それとも、静寂に包まれた「夜の海」ですか？<br><br>
+            <span style="font-size:0.8rem; opacity:0.6;">※この選択は、二度と変更できません。</span>
+        </p>
+        <div style="display:flex; justify-content:center; gap:40px; margin-top:40px;">
+            <button onclick="chooseWorld('morning')" class="close-btn" 
+                style="border-color:#4facfe; color:#4facfe; padding:15px 30px;">
+                朝凪（希望）
+            </button>
+            <button onclick="chooseWorld('night')" class="close-btn" 
+                style="border-color:#888; color:#ccc; padding:15px 30px;">
+                深海（静寂）
+            </button>
+        </div>
+    </div>
+</div>
 <script>
+// ▼▼▼ ページを開いた瞬間の判定 ▼▼▼
+window.onload = function() {
+    // ブラウザに残った「記憶」を確認
+    const world = localStorage.getItem('my_world_type');
+    
+    if (!world) {
+        // まだ選んでいない人（初回）→ 選択画面を出す
+        document.getElementById('world-choice-modal').style.display = 'flex';
+    } else {
+        // すでに選んだ人 → その世界を適用する
+        document.body.classList.add('theme-' + world);
+    }
+};
+
+// ▼▼▼ 世界を選ぶ関数 ▼▼▼
+function chooseWorld(type) {
+    // 1. 記憶に焼き付ける（もう変更できない）
+    localStorage.setItem('my_world_type', type);
+    
+    // 2. 世界を適用する
+    document.body.classList.add('theme-' + type);
+    
+    // 3. 選択画面を消す
+    document.getElementById('world-choice-modal').style.display = 'none';
+    
+    // 演出：これから始まる合図に音を再生してもOK
+    // let audio = new Audio('the-sound-of-calm-waves.mp3'); ...
+}
+
     // モーダルを表示する関数
     function showModal(text) {
         const modal = document.getElementById('letter-modal');
