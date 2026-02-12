@@ -14,15 +14,15 @@ app.use(express.json());
 // 配達員（Nodemailer）の設定
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
-    port: 587,
-    secure: false, 
+    port: 465, // 一旦465に戻し、secureをtrueにします（こっちの方が安定する場合があります）
+    secure: true, 
     auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS
     },
-    tls: {
-        rejectUnauthorized: false
-    }
+    debug: true,   // ★SMTPのやり取りをすべてログに出す
+    logger: true,  // ★エラーの詳細を詳しく出す
+    connectionTimeout: 10000, // 10秒待ってダメなら諦める
 });
 
 // DB接続を安定させる（起動時に1回だけ繋ぐ）
