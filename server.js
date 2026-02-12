@@ -1,73 +1,55 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
+const { MongoClient } = require('mongodb');
 const app = express();
-const PORT = 3000;
+const port = process.env.PORT || 3000;
 
-app.use(express.json());
+// あなたのMongoDB接続文字列（魔法の呪文）
+const uri = "mongodb+srv://yukkuriikou23_db_user:Orzyuku23@cluster0.whi6gzm.mongodb.net/?appName=Cluster0";
+const client = new MongoClient(uri);
+
 app.use(express.static('public'));
+app.use(express.json());
 
-const DATA_DIR = path.join(__dirname, 'data');
-const DATA_FILE = path.join(DATA_DIR, 'messages.json');
-
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
-if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2));
-}
-
-// 簡易的な「エモい翻訳」フィルター
-function pseudoTranslate(text) {
-    const filters = [
-        { jp: "海", en: "the deep blue sea" },
-        { jp: "夜", en: "the silent night" },
-        { jp: "心", en: "my soul" },
-        { jp: "光", en: "a flicker of light" },
-        { jp: "言葉", en: "fragments of words" }
-    ];
-    let translated = text;
-    filters.forEach(f => {
-        translated = translated.split(f.jp).join(f.en);
-    });
-    return `[Across the ocean] ${translated}... translated for the world.`;
-}
-
-app.post('/api/messages', (req, res) => {
+// データベースに接続する関数
+async function connectDB() {
     try {
-        const { text, mode } = req.body;
-        const messages = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-        
-        let processedText = text;
-        if (mode === 'world') {
-            // 異国の海モードなら擬似翻訳をかける
-            processedText = pseudoTranslate(text);
-        }
-
-        const waitTime = mode === 'deep' ? 60000 : 0;
-        messages.push({ 
-            id: Date.now(), 
-            text: processedText, 
-            mode, 
-            revealAt: Date.now() + waitTime 
-        });
-        
-        fs.writeFileSync(DATA_FILE, JSON.stringify(messages, null, 2));
-        res.json({ success: true });
+        await client.connect();
+        // "bottle_mail_db" というデータベースの中の "messages" という箱を使う
+        return client.db("bottle_mail_db").collection("messages");
     } catch (e) {
-        res.status(500).send(e.message);
+        console.error("DB接続エラー:", e);
+    }
+}
+
+// メッセージを受け取る（送信）
+app.post('/api/messages', async (req, res) => {
+    const collection = await connectDB();
+    const newMessage = {
+        text: req.body.text,
+        mode: req.body.mode || 'normal',
+        createdAt: new Date() // 日付も記録
+    };
+    
+    // データベースに保存
+    await collection.insertOne(newMessage);
+    console.log("メッセージをデータベースに保存しました");
+    res.json({ success: true });
+});
+
+// ランダムなメッセージを返す（受信）
+app.get('/api/random', async (req, res) => {
+    const collection = await connectDB();
+    
+    // データベースからランダムに1つ取り出す魔法
+    const randomMsg = await collection.aggregate([{ $sample: { size: 1 } }]).toArray();
+
+    if (randomMsg.length > 0) {
+        res.json(randomMsg[0]);
+    } else {
+        res.json({ text: "海は静かです...（まだメッセージがありません）" });
     }
 });
 
-app.get('/api/random', (req, res) => {
-    try {
-        const messages = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-        const available = messages.filter(m => !m.revealAt || m.revealAt <= Date.now());
-        if (available.length === 0) return res.json({ text: "波は静かです。最初の欠片を投げ込んでください。" });
-        res.json(available[Math.floor(Math.random() * available.length)]);
-    } catch (e) {
-        res.status(500).send(e.message);
-    }
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server started! http://localhost:${PORT}`);
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
 });
