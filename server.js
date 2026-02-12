@@ -140,6 +140,38 @@ app.post('/api/admin/delete', async (req, res) => {
     res.json({ success: true });
 });
 
+// ▼▼▼ 管理者用の裏機能（神の部屋）ここから ▼▼▼
+
+// 1. 全てのボトルを覗き見るAPI
+app.get('/api/admin/all', async (req, res) => {
+    // 合言葉（パスワード）のチェック
+    if (req.query.key !== "niigata2026") {
+        return res.status(403).json({ error: "立ち入り禁止区域です。" });
+    }
+
+    const db = await getDB();
+    // データベースから「全ての手紙」を、新しい順（_id: -1）に取得
+    const allMsgs = await db.collection("messages").find().sort({ _id: -1 }).toArray();
+    res.json(allMsgs);
+});
+
+// 2. 指定したボトルを強制削除する（沈める）API
+app.post('/api/admin/delete', async (req, res) => {
+    // ここでも合言葉をチェック
+    if (req.body.key !== "niigata2026") {
+        return res.status(403).json({ error: "権限がありません。" });
+    }
+
+    const db = await getDB();
+    // ObjectIdを使って、指定されたIDの手紙を消去
+    await db.collection("messages").deleteOne({ _id: new ObjectId(req.body.id) });
+    
+    console.log(`[管理者操作] ID: ${req.body.id} の言葉が沈められました。`);
+    res.json({ success: true });
+});
+
+// ▲▲▲ 管理者用コード ここまで ▲▲▲
+
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
     getDB(); // 起動時に繋いでおく
