@@ -14,15 +14,17 @@ app.use(express.json());
 // 配達員（Nodemailer）の設定
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
-    port: 465, // 一旦465に戻し、secureをtrueにします（こっちの方が安定する場合があります）
-    secure: true, 
+    port: 587,
+    secure: false, // 587番ポートの場合は必ずfalse
     auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS
     },
-    debug: true,   // ★SMTPのやり取りをすべてログに出す
-    logger: true,  // ★エラーの詳細を詳しく出す
-    connectionTimeout: 10000, // 10秒待ってダメなら諦める
+    // ▼ ここがポイント：接続の安定性を高める設定
+    tls: {
+        rejectUnauthorized: false, // 証明書のエラーを無視
+        minVersion: "TLSv1.2"
+    }
 });
 
 // DB接続を安定させる（起動時に1回だけ繋ぐ）
