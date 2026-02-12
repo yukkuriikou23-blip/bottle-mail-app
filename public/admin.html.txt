@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>神の部屋 - 管理画面</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { background: #1a1a1a; color: #eee; font-family: sans-serif; padding: 20px; }
+        h1 { border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 1.5rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #444; padding: 10px; text-align: left; }
+        th { background: #333; }
+        .delete-btn {
+            background: #c0392b; color: white; border: none; padding: 5px 10px;
+            cursor: pointer; border-radius: 4px;
+        }
+        .delete-btn:hover { background: #e74c3c; }
+        .status-sent { color: #2ecc71; } /* 海へ（送信済み） */
+        .status-wait { color: #f1c40f; } /* 陸へ（待機中） */
+    </style>
+</head>
+<body>
+    <h1>🌊 名もなき海 - 全漂流物リスト</h1>
+    <div id="msg-list">読み込み中...</div>
+
+    <script>
+        // ★ここが合言葉（server.jsと同じにする）
+        const SECRET_KEY = "niigata2026"; 
+
+        async function loadMessages() {
+            try {
+                // 合言葉をつけてサーバーに問い合わせる
+                const res = await fetch(`/api/admin/all?key=${SECRET_KEY}`);
+                
+                if (!res.ok) {
+                    throw new Error("認証エラー");
+                }
+
+                const data = await res.json();
+                
+                // データを表（テーブル）にして表示する
+                let html = `<table><tr><th>ID</th><th>内容</th><th>状態</th><th>操作</th></tr>`;
+                data.forEach(msg => {
+                    const status = msg.isSent ? '<span class="status-sent">海へ</span>' : '<span class="status-wait">陸へ</span>';
+                    html += `
+                        <tr>
+                            <td style="font-size:0.8rem; color:#888;">${msg._id}</td>
+                            <td>${msg.text}</td>
+                            <td>${status}</td>
+                            <td><button class="delete-btn" onclick="deleteMsg('${msg._id}')">沈める</button></td>
+                        </tr>`;
+                });
+                html += "</table>";
+                document.getElementById('msg-list').innerHTML = html;
+            } catch (e) {
+                document.getElementById('msg-list').innerText = "アクセス権限がありません。（合言葉が違うか、サーバーの設定がまだです）";
+            }
+        }
+
+        async function deleteMsg(id) {
+            if(!confirm("本当にこの言葉を沈めますか？\n（二度と戻りません）")) return;
+            
+            // 削除命令を送る
+            await fetch('/api/admin/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: SECRET_KEY, id: id })
+            });
+            // 画面を更新してリストを最新にする
+            loadMessages(); 
+        }
+
+        // ページを開いたら読み込む
+        loadMessages();
+    </script>
+</body>
+</html>

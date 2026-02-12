@@ -114,6 +114,32 @@ app.post('/api/messages', async (req, res) => {
     }
 });
 
+// ▼▼▼ 管理者用の裏機能（神の部屋） ▼▼▼
+
+// 1. 全てのボトルを覗き見る
+app.get('/api/admin/all', async (req, res) => {
+    // 簡易的なパスワード認証（URLの ?key=... で判定）
+    if (req.query.key !== "niigata2026") { // ★パスワードは自由に変えてね
+        return res.status(403).json({ error: "立ち入り禁止区域です。" });
+    }
+
+    const db = await getDB();
+    // 新しい順に全件取得
+    const allMsgs = await db.collection("messages").find().sort({ _id: -1 }).toArray();
+    res.json(allMsgs);
+});
+
+// 2. 指定したボトルを強制削除する
+app.post('/api/admin/delete', async (req, res) => {
+    if (req.body.key !== "niigata2026") {
+        return res.status(403).json({ error: "権限がありません。" });
+    }
+
+    const db = await getDB();
+    await db.collection("messages").deleteOne({ _id: new ObjectId(req.body.id) });
+    res.json({ success: true });
+});
+
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
     getDB(); // 起動時に繋いでおく
